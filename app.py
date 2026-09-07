@@ -17,27 +17,28 @@ class Todo(db.Model):
 @app.route("/", methods=['GET', 'POST'])
 def hello_world():
     if request.method == 'POST':
-        title = request.form['title']
-        desc = request.form['desc']
-        todo = Todo(title=title, desc=desc)
-        db.session.add(todo)
-        db.session.commit()
+        title = request.form.get('title', '').strip()
+        desc = request.form.get('desc', '').strip()
+        if title and desc:
+            todo = Todo(title=title, desc=desc)
+            db.session.add(todo)
+            db.session.commit()
         return redirect("/")
         
-    
     allTodo = Todo.query.all() 
     return render_template('index.html', allTodo=allTodo)
 
 @app.route("/products")
 def products():
-    allTodo=Todo.query.all() 
+    allTodo = Todo.query.all() 
     return "<p>This is products page</p>"
 
 @app.route("/delete/<int:sno>")
 def delete(sno):
     todo = Todo.query.filter_by(sno=sno).first() 
-    db.session.delete(todo)
-    db.session.commit()
+    if todo:
+        db.session.delete(todo)
+        db.session.commit()
     return redirect("/")
 
 @app.route('/about')
@@ -46,16 +47,18 @@ def about():
 
 @app.route("/update/<int:sno>", methods=['GET', 'POST'])
 def update(sno):
-    if request.method=='POST':
-        title=request.form['title']
-        desc=request.form['desc']
-        todo = Todo.query.filter_by(sno=sno).first() 
-        todo.title=title
-        todo.desc=desc
-        db.session.add(todo)
-        db.session.commit()
-        return redirect("/")
     todo = Todo.query.filter_by(sno=sno).first() 
+    if not todo:
+        return redirect("/")
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        desc = request.form.get('desc', '').strip()
+        if title and desc:
+            todo.title = title
+            todo.desc = desc
+            db.session.add(todo)
+            db.session.commit()
+        return redirect("/")
     return render_template('update.html', todo=todo)
 
 @app.route("/show")
@@ -65,8 +68,9 @@ def show_todos():
     return 'this is products page'
 
 
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True,port=8000)
+    app.run(debug=True, port=8000)
 
